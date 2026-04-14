@@ -1,0 +1,92 @@
+Incident Reports - Q1 2026
+
+INCIDENT INC-2026-001: Model Serving Latency Spike
+Date: January 15, 2026
+Severity: P1 (Critical)
+Duration: 2 hours 47 minutes
+Impact: 35% of inference requests exceeded SLA (p99 latency > 2000ms)
+
+Root Cause: A memory leak in the model preprocessing pipeline caused progressive degradation of response times. The leak was triggered by a batch of malformed input payloads containing Unicode characters outside the BMP (Basic Multilingual Plane) that the tokenizer failed to handle gracefully, allocating new buffers on each retry without releasing the previous ones.
+
+Timeline:
+- 14:23 UTC: Monitoring alerts triggered for p99 latency > 2000ms
+- 14:31 UTC: On-call engineer acknowledged, initial investigation showed GPU utilization normal but memory usage climbing
+- 14:45 UTC: Identified memory growth pattern in preprocessing containers
+- 15:02 UTC: Root cause isolated to tokenizer Unicode handling
+- 15:15 UTC: Hotfix deployed to reject malformed payloads at the API gateway level
+- 16:30 UTC: Preprocessing containers recycled, memory returned to baseline
+- 17:10 UTC: All SLAs restored, incident resolved
+
+Action Items:
+1. Add input validation at the API gateway for Unicode range checking (completed Jan 20)
+2. Implement memory limits and automatic container recycling when preprocessing memory exceeds 4GB (completed Jan 22)
+3. Add tokenizer fuzzing tests to CI pipeline (completed Feb 1)
+4. Update the model serving runbook with memory leak investigation procedures (completed Jan 25)
+
+INCIDENT INC-2026-007: Vector Database Inconsistency
+Date: February 8, 2026
+Severity: P2 (High)
+Duration: 4 hours 12 minutes
+Impact: RAG pipeline returning stale or irrelevant context for 12% of queries
+
+Root Cause: A scheduled document re-indexing job ran concurrently with a live ingestion pipeline, causing a race condition in the ChromaDB collection. The re-indexing job deleted and recreated chunks for updated documents, but the live ingestion pipeline was simultaneously writing new chunks. This resulted in orphaned embeddings (embeddings without corresponding documents) and duplicate chunks with different embedding versions.
+
+Timeline:
+- 09:15 UTC: Customer support reported increased complaints about incorrect answers
+- 09:45 UTC: Quality monitoring dashboard showed faithfulness scores dropping from 0.85 to 0.62
+- 10:00 UTC: Investigation traced issue to vector DB inconsistencies
+- 10:30 UTC: Paused both the re-indexing job and live ingestion pipeline
+- 11:15 UTC: Ran consistency check: found 847 orphaned embeddings and 234 duplicate chunks
+- 12:00 UTC: Full re-index from source documents completed
+- 13:27 UTC: Faithfulness scores recovered to 0.84, incident resolved
+
+Action Items:
+1. Implement distributed locking for vector DB write operations (completed Feb 15)
+2. Add a pre-ingestion consistency check that verifies document-embedding alignment (completed Feb 20)
+3. Set up automated faithfulness score monitoring with alerts when scores drop below 0.75 (completed Feb 12)
+4. Separate re-indexing to run in a shadow collection, then swap atomically (completed March 1)
+
+INCIDENT INC-2026-012: Prompt Injection Attack
+Date: March 3, 2026
+Severity: P1 (Critical)
+Duration: 45 minutes
+Impact: 3 customer-facing responses contained data from other tenants' documents
+
+Root Cause: An attacker submitted a carefully crafted query containing prompt injection instructions that overrode the system prompt's grounding constraints. The injected prompt instructed the model to ignore its context boundaries and search across all available documents rather than the tenant-scoped collection. The multi-tenant RAG system relied on prompt-level isolation rather than infrastructure-level tenant separation.
+
+Timeline:
+- 11:05 UTC: Automated content filter flagged an unusual response containing cross-tenant data
+- 11:08 UTC: Security team notified, immediate investigation started
+- 11:15 UTC: Identified the malicious query pattern in access logs
+- 11:20 UTC: Blocked the attacking IP and API key
+- 11:35 UTC: Deployed emergency patch adding infrastructure-level tenant collection isolation
+- 11:50 UTC: Verified no further cross-tenant data leakage, incident resolved
+
+Action Items:
+1. Implement infrastructure-level tenant isolation: separate ChromaDB collections per tenant (completed March 5)
+2. Deploy prompt injection detection at the API gateway using a classifier model (completed March 10)
+3. Add output scanning to detect cross-tenant data leakage before returning responses (completed March 8)
+4. Conduct red team exercise on all customer-facing LLM endpoints (completed March 20)
+5. Update security policy to require defense-in-depth for multi-tenant LLM systems (completed March 15)
+
+INCIDENT INC-2026-018: Cost Overrun from Token Explosion
+Date: March 22, 2026
+Severity: P2 (High)
+Duration: Ongoing (detected after 6 hours)
+Impact: $47,000 in unexpected API costs over a single weekend
+
+Root Cause: A new retrieval strategy that expanded queries using chain-of-thought reasoning was deployed on Friday afternoon. The query expansion module generated 5-8 sub-queries per user question, each retrieving 10 context chunks. This resulted in prompts averaging 45,000 tokens (compared to the previous 8,000 token average). Combined with weekend batch processing jobs, the token consumption was 15x normal levels.
+
+Timeline:
+- Friday 17:00 UTC: New query expansion feature deployed to production
+- Saturday 08:00 UTC: Batch processing jobs started, generating expanded queries
+- Sunday 14:00 UTC: Cloud billing alert triggered for >200% budget threshold
+- Sunday 14:15 UTC: On-call engineer investigated, identified the query expansion feature
+- Sunday 14:30 UTC: Feature flag toggled off, token consumption returned to baseline
+- Monday 09:00 UTC: Post-mortem scheduled
+
+Action Items:
+1. Implement per-request token budget limits (max 15,000 tokens per prompt) with circuit breaker (completed March 25)
+2. Add cost estimation to the deployment checklist for any feature affecting token consumption (completed March 28)
+3. Set up real-time cost monitoring dashboard with 1-hour granularity alerts (completed March 26)
+4. Require load testing with cost projection before deploying retrieval strategy changes (completed April 1)

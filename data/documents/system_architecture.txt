@@ -1,0 +1,50 @@
+ML Platform System Architecture
+
+Infrastructure Overview
+
+The ML platform runs on AWS across three regions (us-east-1, us-west-2, eu-west-1) for redundancy and low-latency serving. The architecture follows a microservices pattern with the following core services:
+
+API Gateway (Kong): Handles authentication, rate limiting, request routing, and tenant isolation. Deployed as a cluster of 6 nodes behind an Application Load Balancer. Processes approximately 50,000 requests per minute at peak.
+
+Model Serving Layer (KServe + Triton): Manages model deployments and inference. Uses NVIDIA Triton Inference Server for GPU-optimized serving with dynamic batching. KServe provides the Kubernetes-native model serving abstraction including autoscaling, canary deployments, and traffic splitting. Current capacity: 120 GPU nodes across all regions.
+
+Vector Database Cluster (Pinecone): Stores embeddings for the RAG pipeline. Configured with 3 pods per index, 1536-dimension embeddings, and cosine similarity metric. Current indices: product_knowledge (2.3M vectors), support_docs (890K vectors), internal_wiki (1.2M vectors). Query latency: p50 = 12ms, p99 = 45ms.
+
+Feature Store (Feast + Redis): Serves real-time features for model inference. Redis cluster with 12 nodes provides sub-5ms feature retrieval. Batch features are materialized daily from Delta Lake. Currently serving 450 feature groups across 35 models.
+
+Orchestration (Airflow): Manages batch ML pipelines including data preprocessing, model training, evaluation, and deployment. Runs approximately 200 DAGs daily. Uses Kubernetes executor for dynamic resource allocation.
+
+Observability Stack: Langfuse for LLM-specific tracing (prompts, responses, token usage, latency). Prometheus + Grafana for infrastructure metrics. Datadog for application-level monitoring. PagerDuty for alerting. ELK stack for log aggregation and search.
+
+RAG Pipeline Architecture
+
+The RAG pipeline processes queries through the following stages:
+
+1. Query Processing: Incoming queries pass through a preprocessing pipeline that normalizes text, detects language, and classifies intent. Queries identified as adversarial or containing prompt injection patterns are blocked at this stage (false positive rate < 0.5%).
+
+2. Query Expansion: Complex queries are decomposed into sub-queries using a small, fast model (Claude Haiku). This improves retrieval recall by 23% based on internal benchmarks. Sub-query generation adds approximately 800ms to total latency.
+
+3. Hybrid Retrieval: Combines dense retrieval (embedding similarity via Pinecone) with sparse retrieval (BM25 via Elasticsearch). Results are fused using Reciprocal Rank Fusion (RRF) with k=60. The hybrid approach improves nDCG@10 by 15% compared to dense-only retrieval.
+
+4. Re-ranking: Retrieved candidates are re-scored using a cross-encoder model (ms-marco-MiniLM-L-12-v2) hosted on a dedicated GPU node. Re-ranking improves precision@5 by 18% but adds approximately 150ms latency. Top 5 chunks after re-ranking are passed to the generation stage.
+
+5. Generation: The final prompt is constructed with retrieved context and sent to Claude Sonnet. System prompt enforces grounding constraints and citation requirements. Average generation latency: 2.1 seconds. Token budget: max 12,000 tokens per request.
+
+6. Post-processing: Generated responses pass through output filters including PII detection, toxicity screening, and factual consistency checking against retrieved context. Responses flagged by any filter are returned with appropriate warnings or blocked entirely.
+
+Caching Strategy
+
+To optimize latency and reduce API costs:
+- Semantic cache: Embeddings of recent queries are compared against new queries. If cosine similarity > 0.95, the cached response is returned (cache hit rate: 12%).
+- Exact cache: Hash-based cache for identical queries (cache hit rate: 8%).
+- Context cache: Frequently accessed document chunks are cached in Redis (TTL: 1 hour).
+- Total cache hit rate reduces API costs by approximately 20% and improves p50 latency by 40%.
+
+Disaster Recovery
+
+- RPO (Recovery Point Objective): 1 hour for vector database, 15 minutes for configuration
+- RTO (Recovery Time Objective): 30 minutes for full service restoration
+- Cross-region failover is automated via Route 53 health checks
+- Vector database backups: hourly snapshots to S3, retained for 30 days
+- Model artifacts: stored in S3 with versioning enabled, replicated across all regions
+- Runbook: see DR Playbook section in the ops wiki for step-by-step failover procedures

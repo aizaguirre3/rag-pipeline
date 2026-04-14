@@ -1,0 +1,77 @@
+MLOps Runbook - Model Deployment and Monitoring
+
+Model Deployment Procedure
+
+Step 1: Model Validation
+Before deploying any model to production, run the validation suite:
+- Accuracy benchmark: model must meet or exceed the baseline accuracy on the holdout test set
+- Latency benchmark: p99 inference latency must be under 500ms for real-time endpoints
+- Memory profiling: peak memory usage must not exceed 80% of the target instance's available GPU memory
+- Input/output schema validation: verify the model accepts the expected input format and produces conformant outputs
+- Bias audit: run the fairness evaluation suite and document any demographic parity violations exceeding 5%
+
+Step 2: Canary Deployment
+All production model deployments use a canary strategy:
+- Deploy the new model version alongside the current version
+- Route 5% of traffic to the canary for the first 30 minutes
+- Monitor error rate, latency, and output quality metrics
+- If canary metrics are within 10% of the baseline, increase traffic to 25% for 1 hour
+- If still healthy, promote to 50% for 2 hours, then 100%
+- Automatic rollback triggers: error rate > 1%, p99 latency > 2x baseline, or quality score drop > 0.1
+
+Step 3: Post-Deployment Monitoring
+After full promotion, monitor the following metrics for 48 hours:
+- Request throughput and error rates
+- Latency percentiles (p50, p95, p99)
+- GPU utilization and memory usage
+- Model output distribution (detect drift)
+- Business metrics (conversion rate, user satisfaction scores)
+
+Scaling Configuration
+
+Autoscaling policies for model endpoints:
+- Scale-up trigger: GPU utilization > 70% for 3 consecutive minutes
+- Scale-down trigger: GPU utilization < 30% for 10 consecutive minutes
+- Minimum replicas: 2 (for high availability)
+- Maximum replicas: 20 (cost cap)
+- Scale-up cooldown: 5 minutes (prevent thrashing)
+- Scale-down cooldown: 15 minutes (allow for traffic spikes)
+
+Instance Selection Guide:
+- Small models (<3B parameters): ml.g5.xlarge (1x A10G, 24GB VRAM) — $1.41/hour
+- Medium models (3-13B parameters): ml.g5.2xlarge (1x A10G, 24GB VRAM, 32GB RAM) — $1.69/hour
+- Large models (13-70B parameters): ml.p4d.24xlarge (8x A100, 320GB VRAM) — $32.77/hour
+- For batch inference, use spot instances (60-70% discount) with checkpointing enabled
+
+Alerting Configuration
+
+Critical alerts (PagerDuty, immediate response):
+- Error rate > 5% for 5 minutes
+- p99 latency > 5000ms for 5 minutes
+- All replicas unhealthy
+- GPU memory > 95% (OOM risk)
+
+Warning alerts (Slack #ml-alerts, business hours response):
+- Error rate > 1% for 15 minutes
+- p99 latency > 2000ms for 15 minutes
+- Autoscaler at max replicas for 30 minutes
+- Model output distribution drift detected (KL divergence > 0.1)
+- Token consumption > 150% of daily budget
+
+Rollback Procedure
+
+If a rollback is needed:
+1. Use the deployment dashboard or CLI: `acme-cli model rollback --model-id MODEL_ID --to-version PREV_VERSION`
+2. Rollback completes in under 2 minutes (uses pre-warmed standby instances)
+3. Verify metrics return to baseline within 10 minutes
+4. File an incident report if the rollback was triggered by a customer-facing issue
+5. The failed model version is automatically tagged as "failed" and blocked from future deployments until the root cause is documented
+
+Data Pipeline Integration
+
+Models consume data from the feature store:
+- Real-time features: served from Redis with <5ms latency
+- Batch features: computed daily via Spark jobs and stored in Delta Lake
+- Feature freshness SLA: real-time features updated within 1 second, batch features within 24 hours
+- Feature monitoring: track feature value distributions daily, alert on drift (PSI > 0.2)
+- Feature versioning: all feature definitions are version-controlled in the feature registry

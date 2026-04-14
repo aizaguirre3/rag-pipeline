@@ -1,0 +1,17 @@
+[
+  "What is the rate limit for enterprise tier API keys and what happens when you exceed it?",
+  "How long do access tokens last and how do I refresh them?",
+  "What was the root cause of the model serving latency spike in January 2026?",
+  "What caused the vector database inconsistency incident and how was it resolved?",
+  "What are the steps in the canary deployment procedure for model rollouts?",
+  "What instance type should I use for deploying a 13B parameter model?",
+  "What are the autoscaling triggers for model endpoints?",
+  "How is PII handled in ML training pipelines?",
+  "What logging policy applies to LLM prompts and responses?",
+  "What is the caching strategy used to reduce API costs in the RAG pipeline?",
+  "How does the hybrid retrieval system work and what improvement does it provide?",
+  "What was the financial impact of the token explosion incident and what caused it?",
+  "What data classification tier requires encryption in transit and at rest?",
+  "What are the critical alert thresholds that trigger a PagerDuty notification?",
+  "How does the prompt injection detection work and what was the incident response?"
+]

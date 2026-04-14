@@ -1,0 +1,49 @@
+Data Governance and Compliance Policy
+
+Data Classification
+
+All data processed by the ML platform must be classified according to the following tiers:
+
+Tier 1 - Public: Data that can be freely shared. Examples: published research papers, public documentation, marketing materials. No special handling required.
+
+Tier 2 - Internal: Data intended for internal use only. Examples: internal meeting notes, project plans, non-sensitive business metrics. Must be stored in encrypted-at-rest storage. Access requires company SSO authentication.
+
+Tier 3 - Confidential: Data containing business-sensitive information. Examples: financial forecasts, customer analytics (aggregated), proprietary algorithms, partner contracts. Must be encrypted in transit and at rest using AES-256. Access requires role-based authorization and is logged for audit purposes. Retention period: 7 years or as required by applicable regulations.
+
+Tier 4 - Restricted: Data subject to regulatory requirements or containing personal information. Examples: PII (personally identifiable information), PHI (protected health information), payment card data, biometric data. Must comply with GDPR, HIPAA, PCI-DSS, or CCPA as applicable. Access requires explicit approval from the Data Protection Officer. All access is logged and auditable. Data must be anonymized or pseudonymized before use in ML training. Retention period: as specified by the applicable regulation; default is 3 years with automatic deletion.
+
+PII Handling in ML Pipelines
+
+When ML pipelines process data that may contain PII:
+1. Data must pass through the PII detection service before ingestion
+2. Detected PII must be masked, anonymized, or removed based on the use case
+3. PII detection model runs entity recognition for: names, email addresses, phone numbers, SSNs, credit card numbers, physical addresses, IP addresses, and dates of birth
+4. False negative rate for PII detection must be below 0.1% (validated quarterly)
+5. Training data containing PII requires a Data Protection Impact Assessment (DPIA) approved by the DPO
+6. Production logs must never contain raw PII — all logging must use the sanitized logger
+
+Prompt and Response Logging
+
+For LLM-based systems, the following logging policy applies:
+- All prompts and responses are logged to the observability platform (Langfuse) for quality monitoring
+- Logs are retained for 90 days for operational purposes
+- Logs containing Tier 4 data must be encrypted with a separate key managed by the security team
+- Customers can request deletion of their prompt/response logs under GDPR Article 17 (Right to Erasure)
+- Prompt logs are not used for model training unless explicit consent is obtained
+- A monthly audit samples 1% of logged interactions for compliance review
+
+Model Training Data Requirements
+
+- All training datasets must be registered in the data catalog with lineage tracking
+- Training data must include a data card documenting: source, collection methodology, demographic representation, known biases, and intended use
+- Models trained on customer data require a legal review for terms-of-service compliance
+- Synthetic data generation is preferred for sensitive domains; synthetic data must be validated to ensure it doesn't memorize or leak source data
+- Data retention: training datasets are retained for the lifetime of the model plus 2 years for reproducibility
+
+Audit and Compliance
+
+- Quarterly access audits: verify that all data access permissions follow the principle of least privilege
+- Annual compliance certification: SOC 2 Type II, ISO 27001
+- All ML models deployed to production must have a model card documenting: intended use, limitations, performance metrics across demographic groups, and known failure modes
+- Bias monitoring: automated fairness metrics are computed monthly; any metric exceeding the threshold triggers a mandatory review
+- Right to explanation: for any automated decision affecting customers, the system must be able to provide a human-readable explanation of the factors that influenced the decision
