@@ -34,6 +34,25 @@ Documents (.txt/.md)
 └─────────────────────────────────┘
 ```
 
+## Results
+
+Tested on an enterprise MLOps knowledge base (8 documents, 65 chunks) with 15 industry-grade questions. Full results: **[RESULTS.md](RESULTS.md)**
+
+| Metric | Value |
+|--------|-------|
+| **Questions Answered** | 15/15 |
+| **Avg Latency** | 4,273 ms |
+| **Avg Chunk Relevance** | 0.85 |
+| **Source Attribution** | Correct on all 15 answers |
+
+When scored by the [LLM Eval Harness](https://github.com/aizaguirre3/llm-eval-harness):
+
+| RAGAS Metric | Sonnet 4 | Haiku 4.5 |
+|--------------|----------|-----------|
+| **Faithfulness** | 0.671 | **0.817** |
+| **Context Precision** | **1.000** | **1.000** |
+| **Context Recall** | **1.000** | **1.000** |
+
 ## Quick Start
 
 ```bash
