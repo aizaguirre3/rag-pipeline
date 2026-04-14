@@ -1,0 +1,15 @@
+Large Language Models: Architecture and Training
+
+Large Language Models (LLMs) are neural networks based on the transformer architecture, first introduced in the 2017 paper "Attention Is All You Need." These models use self-attention mechanisms to process sequences of text, enabling them to capture long-range dependencies between words and generate coherent, contextually relevant text.
+
+The training process for LLMs involves two main phases: pre-training and fine-tuning. During pre-training, the model is exposed to vast amounts of text data from the internet, books, and other sources. The model learns to predict the next token in a sequence, a process called causal language modeling. This phase requires enormous computational resources, often thousands of GPUs running for weeks or months.
+
+Fine-tuning is the second phase where the pre-trained model is adapted for specific tasks. This can involve supervised fine-tuning (SFT) with labeled examples, reinforcement learning from human feedback (RLHF), or direct preference optimization (DPO). These techniques help align the model's behavior with human preferences and improve its performance on specific tasks.
+
+Key architectural components include multi-head attention, feed-forward neural networks, layer normalization, and positional encodings. Modern LLMs like Claude, GPT-4, and Llama use variations of these components, often with modifications like rotary positional embeddings (RoPE), grouped query attention (GQA), and mixture of experts (MoE).
+
+Tokenization is a critical preprocessing step where text is broken down into subword units called tokens. Common tokenization algorithms include Byte Pair Encoding (BPE), WordPiece, and SentencePiece. The choice of tokenizer affects the model's vocabulary size, efficiency, and ability to handle different languages and special characters.
+
+Context windows define the maximum number of tokens a model can process in a single forward pass. Early transformer models had context windows of 512-2048 tokens, while modern models support context windows of 100,000 to 1,000,000+ tokens. Longer context windows enable the model to process entire documents, codebases, or lengthy conversations in a single interaction.
+
+Scaling laws describe the predictable relationship between model size, training data, compute budget, and performance. Research by Kaplan et al. and Hoffmann et al. (Chinchilla) showed that model performance improves as a power law with increases in these factors. The Chinchilla scaling laws specifically demonstrated that many early LLMs were undertrained relative to their size, leading to more efficient training strategies.

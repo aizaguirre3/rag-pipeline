@@ -1,0 +1,22 @@
+Retrieval-Augmented Generation (RAG) Architecture
+
+Retrieval-Augmented Generation (RAG) is a technique that enhances LLM responses by providing relevant external knowledge at inference time. Instead of relying solely on the knowledge encoded in the model's parameters during training, RAG systems retrieve relevant documents from a knowledge base and include them as context in the prompt.
+
+The RAG pipeline consists of three main stages: ingestion, retrieval, and generation.
+
+Ingestion Phase:
+During ingestion, documents are processed and stored in a vector database. The process involves: (1) Document loading from various sources (PDFs, web pages, databases). (2) Text splitting/chunking into manageable segments, typically 200-1000 tokens. (3) Embedding generation using models like OpenAI's text-embedding-3-small or open-source alternatives like sentence-transformers. (4) Storage in a vector database such as ChromaDB, Pinecone, Weaviate, or Qdrant.
+
+Chunking strategies significantly impact retrieval quality. Common approaches include fixed-size chunking (simple but may split sentences), recursive character splitting (respects document structure), semantic chunking (groups by meaning), and agentic chunking (uses an LLM to determine boundaries). The optimal chunk size depends on the use case: smaller chunks (200-400 tokens) provide more precise retrieval, while larger chunks (500-1000 tokens) preserve more context.
+
+Retrieval Phase:
+When a user asks a question, the retrieval system converts the query into an embedding and searches the vector database for the most similar chunks. This process is called dense retrieval or semantic search. The similarity is typically measured using cosine similarity, dot product, or Euclidean distance.
+
+Advanced retrieval techniques include: hybrid search (combining dense and sparse/keyword retrieval), re-ranking (using a cross-encoder to re-score retrieved documents), query expansion (generating multiple query variants), HyDE (Hypothetical Document Embeddings — generating a hypothetical answer and using it as the search query), and multi-query retrieval (breaking complex questions into sub-queries).
+
+Generation Phase:
+The retrieved context is formatted and prepended to the user's question in the LLM prompt. The model then generates a response grounded in the provided context. System prompts typically instruct the model to only use information from the provided context, reducing hallucination.
+
+Common RAG failure modes include: (1) Retrieval failures — relevant documents exist but aren't retrieved due to poor chunking, inadequate embeddings, or query-document semantic gaps. (2) Context window overflow — too many retrieved chunks exceed the model's context window. (3) Lost in the middle — models tend to focus on the beginning and end of the context, missing information in the middle. (4) Hallucination despite context — the model generates plausible but incorrect information not supported by the retrieved documents.
+
+Evaluation of RAG systems uses metrics like faithfulness (is the answer grounded in the context?), context relevancy (are the retrieved documents relevant to the question?), answer relevancy (does the answer address the question?), and context recall (were all necessary documents retrieved?). Frameworks like RAGAS provide automated evaluation of these metrics.

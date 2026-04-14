@@ -1,0 +1,24 @@
+Prompt Engineering Best Practices
+
+Prompt engineering is the practice of designing and optimizing inputs to large language models to achieve desired outputs. Effective prompt engineering can dramatically improve the quality, consistency, and reliability of LLM responses without requiring model fine-tuning.
+
+System Prompts:
+System prompts set the overall behavior, persona, and constraints for the model. Best practices include: clearly defining the model's role and expertise, specifying output format requirements (JSON, markdown, etc.), establishing guardrails and boundaries, and providing examples of desired behavior. System prompts are evaluated once and applied to all subsequent messages in a conversation.
+
+Few-Shot Prompting:
+Including examples of input-output pairs in the prompt helps the model understand the expected format and reasoning pattern. Research shows that few-shot prompting can match or exceed fine-tuning for many tasks. Key considerations include: selecting diverse, representative examples; ordering examples from simple to complex; and including edge cases that demonstrate how to handle ambiguous inputs.
+
+Chain-of-Thought (CoT) Prompting:
+Encouraging the model to "think step by step" before providing a final answer significantly improves performance on reasoning tasks. Variants include zero-shot CoT (simply adding "Let's think step by step"), few-shot CoT (providing examples with reasoning), and self-consistency (generating multiple reasoning paths and taking the majority vote).
+
+Structured Output:
+When you need the model to produce structured data, explicitly define the schema in the prompt. Use JSON mode or tool use/function calling when available. Provide a complete example of the expected output format. Validate outputs against the schema programmatically.
+
+Prompt Optimization Techniques:
+Advanced techniques include: prompt chaining (breaking complex tasks into sequential steps), tree-of-thought (exploring multiple reasoning branches), retrieval-augmented prompting (including relevant examples dynamically), and meta-prompting (using an LLM to generate or optimize prompts). Automated prompt optimization tools like DSPy can systematically improve prompts through compilation and optimization.
+
+Common Pitfalls:
+Avoid vague instructions ("be helpful"), redundant context, overly complex single prompts (break them up instead), and implicit assumptions about the model's knowledge. Be explicit about constraints, format, and evaluation criteria. Test prompts systematically with diverse inputs to identify failure modes.
+
+Temperature and Sampling:
+Temperature controls the randomness of outputs. Low temperature (0-0.3) produces deterministic, focused responses suitable for factual Q&A and code generation. Medium temperature (0.3-0.7) balances creativity and coherence. High temperature (0.7-1.0) produces more diverse, creative outputs. Top-p (nucleus sampling) provides an alternative control by limiting the token selection to the smallest set whose cumulative probability exceeds p.

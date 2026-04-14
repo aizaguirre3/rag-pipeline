@@ -1,0 +1,12 @@
+[
+  "What is the transformer architecture and when was it introduced?",
+  "What are the two main phases of LLM training?",
+  "What chunking strategies are used in RAG systems?",
+  "How does retrieval work in a RAG pipeline?",
+  "What are common RAG failure modes?",
+  "What is chain-of-thought prompting?",
+  "How does temperature affect LLM outputs?",
+  "What are scaling laws in the context of LLMs?",
+  "What is RLHF and why is it used?",
+  "How is faithfulness measured in RAG evaluation?"
+]
